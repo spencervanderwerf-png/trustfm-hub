@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustFM — FM Hub</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f0f0; }
+
+  .sp-chrome { background: #fff; max-width: 1400px; margin: 0 auto; min-height: 100vh; }
+
+  /* NAV */
+  .sp-nav { background: #1f497d; padding: 10px 16px; display: flex; align-items: center; gap: 16px; }
+  .sp-nav-title { color: #fff; font-size: 15px; font-weight: 500; }
+  .sp-nav-links { display: flex; gap: 20px; }
+  .sp-nav-links a { color: rgba(255,255,255,0.8); font-size: 13px; text-decoration: none; }
+  .sp-nav-links a.active { color: #fff; border-bottom: 2px solid #fff; padding-bottom: 2px; }
+
+  /* PAGE TITLE */
+  .sp-page-title { background: #f4f4f4; border-bottom: 0.5px solid #e0e0e0; padding: 10px 20px; font-size: 18px; font-weight: 500; color: #1f1f1f; }
+
+  /* KPI STRIP */
+  .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 14px; background: #fff; border-bottom: 0.5px solid #e0e0e0; }
+  .kpi { background: #f4f4f4; border-radius: 6px; padding: 10px 14px; }
+  .kpi-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+  .kpi-value { font-size: 22px; font-weight: 500; color: #1f1f1f; }
+  .kpi-value.red { color: #A32D2D; }
+  .kpi-value.amber { color: #854F0B; }
+
+  /* BODY GRID */
+  .sp-body { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #f8f8f8; }
+  .sp-section-full { grid-column: 1 / -1; }
+
+  /* CARDS */
+  .sp-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 6px; overflow: hidden; }
+  .sp-card-header { padding: 10px 14px; border-bottom: 0.5px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; }
+  .sp-card-header-title { font-size: 14px; font-weight: 500; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+  .sp-card-header-title i { font-size: 16px; color: #1f497d; }
+  .sp-card-link { font-size: 12px; color: #1f497d; text-decoration: none; }
+  .sp-card-link:hover { text-decoration: underline; }
+
+  /* TABLES */
+  .sp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .sp-table th { padding: 6px 10px; text-align: left; font-size: 11px; font-weight: 500; color: #666; background: #f9f9f9; border-bottom: 0.5px solid #e0e0e0; }
+  .sp-table td { padding: 7px 10px; border-bottom: 0.5px solid #ebebeb; color: #1f1f1f; vertical-align: middle; }
+  .sp-table tr:last-child td { border-bottom: none; }
+  .sp-table tr:hover td { background: #f9f9f9; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-p1   { background: #f7c1c1; color: #791f1f; }
+  .badge-p2   { background: #FAC775; color: #633806; }
+  .badge-p3   { background: #C0DD97; color: #27500A; }
+  .badge-p4   { background: #d0ecd0; color: #1a4d1a; }
+  .badge-new  { background: #B5D4F4; color: #0C447C; }
+  .badge-ack  { background: #e8d5f5; color: #4d1a7f; }
+  .badge-asgn { background: #cce0ff; color: #004578; }
+  .badge-prog { background: #CecBF6; color: #3C3489; }
+  .badge-pend { background: #FAC775; color: #633806; }
+  .badge-hold { background: #e8e8e8; color: #555; }
+  .badge-over { background: #f7c1c1; color: #791f1f; }
+  .badge-soon { background: #FAC775; color: #633806; }
+  .badge-ok   { background: #C0DD97; color: #27500A; }
+  .badge-exp  { background: #f7c1c1; color: #791f1f; }
+  .badge-none { background: #e8e8e8; color: #555; }
+
+  /* ASSIGN BUTTON */
+  .assign-btn { font-size: 11px; color: #1f497d; background: none; border: 0.5px solid #1f497d; border-radius: 4px; padding: 2px 7px; cursor: pointer; white-space: nowrap; }
+  .assign-btn:hover { background: #1f497d; color: #fff; }
+
+  /* STATES */
+  .sp-loading { padding: 20px; text-align: center; color: #888; font-size: 13px; }
+  .sp-empty   { padding: 16px; text-align: center; color: #888; font-size: 12px; font-style: italic; }
+  .sp-error   { padding: 12px 14px; color: #791f1f; background: #fde7e9; font-size: 12px; }
+
+  .date-overdue { color: #A32D2D; }
+  .date-soon    { color: #854F0B; }
+  .job-ref      { color: #1f497d; }
+  .unassigned   { color: #999; }
+
+  /* ── MODAL ────────────────────────────────────────────────────────────── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 8px; padding: 24px;
+    width: 420px; max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  .modal-title {
+    font-size: 15px; font-weight: 600; color: #1f1f1f;
+    margin-bottom: 4px;
+  }
+  .modal-subtitle {
+    font-size: 12px; color: #666; margin-bottom: 18px;
+  }
+  .modal label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: #444; margin-bottom: 5px; margin-top: 14px;
+  }
+  .modal select, .modal input[type="text"] {
+    width: 100%; padding: 7px 10px; border: 0.5px solid #ccc;
+    border-radius: 4px; font-size: 13px; color: #1f1f1f;
+    background: #fafafa;
+  }
+  .modal select:focus, .modal input[type="text"]:focus {
+    outline: none; border-color: #1f497d;
+  }
+  .modal-note {
+    font-size: 11px; color: #888; margin-top: 6px;
+  }
+  .modal-actions {
+    display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px;
+  }
+  .btn-cancel {
+    font-size: 12px; padding: 6px 14px; border-radius: 4px;
+    border: 0.5px solid #ccc; background: #fff; color: #555; cursor: pointer;
+  }
+  .btn-cancel:hover { background: #f4f4f4; }
+  .btn-save {
+    font-size: 12px; padding: 6px 14px; border-radius: 4px;
+    border: none; background: #1f497d; color: #fff; cursor: pointer;
+  }
+  .btn-save:hover { background: #163660; }
+  .btn-save:disabled { background: #8aabcf; cursor: default; }
+
+  /* TOAST */
+  .toast {
+    display: none; position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    background: #1f497d; color: #fff; font-size: 13px;
+    padding: 10px 20px; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 2000; white-space: nowrap;
+  }
+  .toast.error { background: #A32D2D; }
+  .toast.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="sp-chrome">
+
+  <div class="sp-nav">
+    <span class="sp-nav-title">TrustFM</span>
+    <div class="sp-nav-links">
+      <a href="/sites/TrustFM/SitePages/FM-Hub.aspx" class="active">FM Hub</a>
+      <a href="/sites/TrustFM/Lists/Schools">Schools</a>
+      <a href="/sites/TrustFM/Lists/Assets">Assets</a>
+      <a href="/sites/TrustFM/Lists/Contractors">Contractors</a>
+      <a href="/sites/TrustFM/Shared%20Documents">Documents</a>
+    </div>
+  </div>
+
+  <div class="sp-page-title">FM Hub</div>
+
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-label">Open jobs</div>
+      <div class="kpi-value" id="kpiOpen">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">P1 emergencies</div>
+      <div class="kpi-value red" id="kpiP1">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">PPM overdue</div>
+      <div class="kpi-value amber" id="kpiPPM">—</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Contractors expiring</div>
+      <div class="kpi-value amber" id="kpiContractors">—</div>
+    </div>
+  </div>
+
+  <div class="sp-body">
+
+    <!-- OPEN JOBS — full width -->
+    <div class="sp-card sp-section-full">
+      <div class="sp-card-header">
+        <span class="sp-card-header-title">
+          <i class="ti ti-tool" aria-hidden="true"></i>Open jobs
+        </span>
+        <a href="/sites/TrustFM/Lists/ReactiveJobs" class="sp-card-link">View all</a>
+      </div>
+      <div id="jobsContainer"><div class="sp-loading">Loading...</div></div>
+    </div>
+
+    <!-- PPM OVERDUE -->
+    <div class="sp-card">
+      <div class="sp-card-header">
+        <span class="sp-card-header-title">
+          <i class="ti ti-calendar" aria-hidden="true"></i>PPM overdue
+        </span>
+        <a href="/sites/TrustFM/Lists/PPMTasks" class="sp-card-link">View all</a>
+      </div>
+      <div id="ppmContainer"><div class="sp-loading">Loading...</div></div>
+    </div>
+
+    <!-- CONTRACTOR COMPLIANCE -->
+    <div class="sp-card">
+      <div class="sp-card-header">
+        <span class="sp-card-header-title">
+          <i class="ti ti-building" aria-hidden="true"></i>Contractor compliance
+        </span>
+        <a href="/sites/TrustFM/Lists/Contractors" class="sp-card-link">View all</a>
+      </div>
+      <div id="contractorContainer"><div class="sp-loading">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── ASSIGN MODAL ────────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="assignModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Assign job</div>
+    <div class="modal-subtitle" id="modalSubtitle"></div>
+
+    <label for="contractorSelect">Assign to</label>
+    <select id="contractorSelect">
+      <option value="">— Select contractor —</option>
+    </select>
+    <div class="modal-note">Only active contractors from the Contractors list are shown.</div>
+
+    <label for="statusSelect">Update status to</label>
+    <select id="statusSelect">
+      <option value="Assigned">Assigned</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Acknowledged">Acknowledged</option>
+      <option value="New">New (leave unchanged)</option>
+      <option value="On Hold">On Hold</option>
+      <option value="Pending Sign-off">Pending Sign-off</option>
+    </select>
+
+    <label for="notesInput">Notes (optional)</label>
+    <input type="text" id="notesInput" placeholder="e.g. Contractor confirmed for Thursday AM">
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="btnSave" onclick="saveAssignment()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ───────────────────────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const SITE_URL  = 'https://brownconsultltd.sharepoint.com/sites/TrustFM';
+const API       = SITE_URL + '/_api/web/lists/getbytitle';
+const HEADERS   = { 'Accept': 'application/json;odata=nometadata' };
+const TODAY     = new Date();
+const SOON      = new Date(TODAY); SOON.setDate(SOON.getDate() + 60);
+const TODAY_ISO = TODAY.toISOString();
+
+// State
+let allJobs        = [];
+let allContractors = [];
+let activeJobId    = null;
+let activeJobRow   = null;
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function fmt(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function priorityBadge(p) {
+  const map = { 'P1 Emergency': 'badge-p1', 'P2 Urgent': 'badge-p2', 'P3 Routine': 'badge-p3', 'P4 Planned': 'badge-p4' };
+  return p ? `<span class="badge ${map[p] || 'badge-p3'}">${p}</span>` : '';
+}
+
+function statusBadge(s) {
+  const map = {
+    'New': 'badge-new', 'Acknowledged': 'badge-ack', 'Assigned': 'badge-asgn',
+    'In Progress': 'badge-prog', 'Pending Sign-off': 'badge-pend', 'On Hold': 'badge-hold'
+  };
+  return s ? `<span class="badge ${map[s] || 'badge-new'}">${s}</span>` : '';
+}
+
+function complianceBadge(item) {
+  const dates = [item.EmployerLiabilityExpiry, item.Accreditation1Expiry, item.Accreditation2Expiry].filter(Boolean);
+  if (!dates.length) return '<span class="badge badge-none">No dates</span>';
+  if (dates.some(d => new Date(d) < TODAY)) return '<span class="badge badge-exp">Expired</span>';
+  if (dates.some(d => new Date(d) < SOON))  return '<span class="badge badge-soon">Due soon</span>';
+  return '<span class="badge badge-ok">Compliant</span>';
+}
+
+function isExpiring(item) {
+  return [item.EmployerLiabilityExpiry, item.Accreditation1Expiry, item.Accreditation2Expiry]
+    .filter(Boolean).some(d => new Date(d) < SOON);
+}
+
+function earliestExpiry(item) {
+  const dates = [item.EmployerLiabilityExpiry, item.Accreditation1Expiry, item.Accreditation2Expiry].filter(Boolean);
+  if (!dates.length) return null;
+  return dates.map(d => new Date(d)).sort((a,b) => a-b)[0];
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+
+// ── FETCH ────────────────────────────────────────────────────────────────────
+async function get(url) {
+  const r = await fetch(url, { headers: HEADERS, credentials: 'include' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return (await r.json()).value || [];
+}
+
+async function fetchJobs() {
+  return get(
+    `${API}('ReactiveJobs')/items` +
+    `?$select=ID,JobRef,FaultDescription,JobStatus,Priority,Category,Location,School/SchoolName,AssignedTo,TargetCompletionDate` +
+    `&$expand=School` +
+    `&$filter=JobStatus ne 'Closed' and JobStatus ne 'Cancelled'` +
+    `&$orderby=Priority asc&$top=100`
+  );
+}
+
+async function fetchPPM() {
+  return get(
+    `${API}('PPMTasks')/items` +
+    `?$select=ID,TaskName,School/SchoolName,Category,NextDueDate` +
+    `&$expand=School` +
+    `&$filter=NextDueDate lt '${TODAY_ISO}' and Active eq 1` +
+    `&$orderby=NextDueDate asc&$top=50`
+  );
+}
+
+async function fetchContractors() {
+  return get(
+    `${API}('Contractors')/items` +
+    `?$select=ID,ContractorName,ContractorType,PrimaryContact,EmployerLiabilityExpiry,Accreditation1Expiry,Accreditation2Expiry` +
+    `&$filter=Active eq 1` +
+    `&$orderby=ContractorName asc&$top=100`
+  );
+}
+
+// ── SHAREPOINT WRITE ─────────────────────────────────────────────────────────
+async function getFormDigest() {
+  const r = await fetch(`${SITE_URL}/_api/contextinfo`, {
+    method: 'POST',
+    headers: { 'Accept': 'application/json;odata=nometadata' },
+    credentials: 'include'
+  });
+  const d = await r.json();
+  return d.FormDigestValue;
+}
+
+async function patchJob(id, body) {
+  const digest = await getFormDigest();
+  const r = await fetch(`${API}('ReactiveJobs')/items(${id})`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json;odata=nometadata',
+      'Content-Type': 'application/json;odata=nometadata',
+      'X-HTTP-Method': 'MERGE',
+      'If-Match': '*',
+      'X-RequestDigest': digest
+    },
+    body: JSON.stringify(body),
+    credentials: 'include'
+  });
+  if (!r.ok) throw new Error('Save failed: HTTP ' + r.status);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openAssignModal(jobId, jobRef, currentAssignee) {
+  activeJobId  = jobId;
+  activeJobRow = document.querySelector(`tr[data-job-id="${jobId}"]`);
+
+  document.getElementById('modalTitle').textContent =
+    currentAssignee ? 'Reassign job' : 'Assign job';
+  document.getElementById('modalSubtitle').textContent =
+    `Job ref: ${jobRef}` + (currentAssignee ? ` · Currently: ${currentAssignee}` : '');
+
+  // Populate contractor dropdown
+  const sel = document.getElementById('contractorSelect');
+  sel.innerHTML = '<option value="">— Select contractor —</option>';
+  allContractors.forEach(c => {
+    const name = c.ContractorName || c.Title || '—';
+    const opt  = document.createElement('option');
+    opt.value  = name;
+    opt.textContent = name + (c.ContractorType ? ` (${c.ContractorType})` : '');
+    if (currentAssignee && name === currentAssignee) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Default status
+  document.getElementById('statusSelect').value = 'Assigned';
+  document.getElementById('notesInput').value = '';
+  document.getElementById('btnSave').disabled = false;
+  document.getElementById('assignModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('assignModal').classList.remove('open');
+  activeJobId  = null;
+  activeJobRow = null;
+}
+
+// Close on backdrop click
+document.getElementById('assignModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+async function saveAssignment() {
+  const contractor = document.getElementById('contractorSelect').value;
+  const status     = document.getElementById('statusSelect').value;
+  const notes      = document.getElementById('notesInput').value.trim();
+
+  if (!contractor) {
+    showToast('Please select a contractor.', true);
+    return;
+  }
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const body = {
+      AssignedTo: contractor,
+      JobStatus:  status
+    };
+    if (notes) body.Notes = notes;
+
+    await patchJob(activeJobId, body);
+
+    // Update the row in-place without a full reload
+    if (activeJobRow) {
+      // Assigned to cell (index 6)
+      activeJobRow.cells[6].innerHTML = contractor;
+      // Status cell (index 5)
+      activeJobRow.cells[5].innerHTML = statusBadge(status);
+      // Button label (index 7)
+      activeJobRow.cells[7].querySelector('button').textContent = 'Reassign';
+    }
+
+    // Update in-memory job list so re-open works
+    const job = allJobs.find(j => j.ID === activeJobId);
+    if (job) { job.AssignedTo = contractor; job.JobStatus = status; }
+
+    showToast(`Assigned to ${contractor} · Status set to ${status}`);
+    closeModal();
+
+  } catch (e) {
+    showToast('Save failed — ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function renderJobs(jobs) {
+  document.getElementById('kpiOpen').textContent = jobs.length;
+  document.getElementById('kpiP1').textContent   = jobs.filter(j => j.Priority === 'P1 Emergency').length;
+
+  if (!jobs.length) {
+    document.getElementById('jobsContainer').innerHTML = '<div class="sp-empty">No open jobs.</div>';
+    return;
+  }
+
+  let rows = '';
+  jobs.forEach(j => {
+    const school   = j.School ? j.School.SchoolName : '—';
+    const location = j.Location || '—';
+    const assigned = j.AssignedTo || '';
+    const assignedCell = assigned
+      ? assigned
+      : '<span class="unassigned">Unassigned</span>';
+    const btnLabel = assigned ? 'Reassign' : 'Assign';
+    const jobRef   = j.JobRef || '—';
+
+    rows += `<tr data-job-id="${j.ID}">
+      <td class="job-ref"><a href="${SITE_URL}/Lists/ReactiveJobs/DispForm.aspx?ID=${j.ID}" target="_blank" style="color:#1f497d;text-decoration:none;">${jobRef}</a></td>
+      <td>${school}</td>
+      <td>${j.FaultDescription || '—'}</td>
+      <td>${location}</td>
+      <td>${priorityBadge(j.Priority)}</td>
+      <td>${statusBadge(j.JobStatus)}</td>
+      <td>${assignedCell}</td>
+      <td><button class="assign-btn" onclick="openAssignModal(${j.ID}, '${jobRef.replace(/'/g,"\\'")}', '${assigned.replace(/'/g,"\\'")}')">
+        ${btnLabel}
+      </button></td>
+    </tr>`;
+  });
+
+  document.getElementById('jobsContainer').innerHTML = `
+    <table class="sp-table">
+      <thead><tr>
+        <th>Job ref</th><th>School</th><th>Fault</th><th>Location</th>
+        <th>Priority</th><th>Status</th><th>Assigned to</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderPPM(tasks) {
+  document.getElementById('kpiPPM').textContent = tasks.length;
+
+  if (!tasks.length) {
+    document.getElementById('ppmContainer').innerHTML = '<div class="sp-empty">No overdue PPM tasks.</div>';
+    return;
+  }
+
+  let rows = '';
+  tasks.forEach(t => {
+    const name   = t.TaskName || t.Task_x0020_Name || t.Title || '—';
+    const school = t.School ? t.School.SchoolName : '—';
+    rows += `<tr>
+      <td>${name}</td>
+      <td>${school}</td>
+      <td class="date-overdue">${fmt(t.NextDueDate)}</td>
+      <td><span class="badge badge-over">Overdue</span></td>
+    </tr>`;
+  });
+
+  document.getElementById('ppmContainer').innerHTML = `
+    <table class="sp-table">
+      <thead><tr><th>Task</th><th>School</th><th>Due</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function renderContractors(contractors) {
+  const expiring = contractors.filter(isExpiring).length;
+  document.getElementById('kpiContractors').textContent = expiring;
+
+  if (!contractors.length) {
+    document.getElementById('contractorContainer').innerHTML = '<div class="sp-empty">No contractors found.</div>';
+    return;
+  }
+
+  let rows = '';
+  contractors.forEach(c => {
+    const name    = c.ContractorName || c.Contractor_x0020_Name || c.Title || '—';
+    const type    = c.ContractorType || c.Contractor_x0020_Type || '—';
+    const expDate = earliestExpiry(c);
+    const expStr  = expDate
+      ? `<span class="${expDate < TODAY ? 'date-overdue' : expDate < SOON ? 'date-soon' : ''}">${fmt(expDate.toISOString())}</span>`
+      : '—';
+
+    rows += `<tr>
+      <td>${name}</td>
+      <td>${type}</td>
+      <td>${expStr}</td>
+      <td>${complianceBadge(c)}</td>
+    </tr>`;
+  });
+
+  document.getElementById('contractorContainer').innerHTML = `
+    <table class="sp-table">
+      <thead><tr><th>Contractor</th><th>Type</th><th>EL expiry</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+async function init() {
+  const [jobs, ppm, contractors] = await Promise.all([
+    fetchJobs().catch(e => { console.error('Jobs:', e); return []; }),
+    fetchPPM().catch(e => { console.error('PPM:', e); return []; }),
+    fetchContractors().catch(e => { console.error('Contractors:', e); return []; })
+  ]);
+
+  allJobs        = jobs;
+  allContractors = contractors;
+
+  renderJobs(jobs);
+  renderPPM(ppm);
+  renderContractors(contractors);
+
+  if (!jobs.length && !ppm.length && !contractors.length) {
+    document.getElementById('jobsContainer').innerHTML =
+      '<div class="sp-error">No data returned. This file must be uploaded to SharePoint Site Assets and embedded via an Embed web part. Check the browser console for details.</div>';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
